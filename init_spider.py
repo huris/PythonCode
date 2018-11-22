@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# 这是一个爬虫包图网视频的程序
-
-
+import random
 import re
 import math
 import time
@@ -12,7 +10,7 @@ import sys
 import os
 import requests
 import random
-
+from bs4 import BeautifulSoup
 
 def get_headers():
     '''
@@ -76,6 +74,28 @@ def get_headers():
     headers = {'User-Agent': random.choice(user_agents)}
     return headers
 
+# 获取规定页数的代理
+def get_ip(page):
+    url = 'http://www.xicidaili.com/nn/{}'
+    fp = open('host.txt', 'a')
+    for i in range(page):
+        s = requests.get(url.format(1), headers=headers)
+        soup = BeautifulSoup(s.text, 'lxml')
+        ips = soup.select('#ip_list tr')
+        for i in ips:
+            try:
+                ipp = i.select('td')
+                ip = ipp[1].text
+                host = ipp[2].text
+                fp.write(ip)
+                fp.write('\t')
+                fp.write(host)
+                fp.write('\n')
+            except Exception as e:
+                print('no ip!')
+        time.sleep(random.randint(0, 5))
+    fp.close()
+
 
 def init_proxy():
     fp = open('host.txt', 'r')
@@ -87,33 +107,6 @@ def init_proxy():
         proxies = {'proxy': proxy}
         proxys.append(proxies)
     return proxys
-
-
-if __name__ == '__main__':
-    session = requests.session()
-    header = get_headers()
-    proxys = init_proxy()
-    for i in range(3,11):
-        url = 'https://ibaotu.com/shipin/7-5139-0-0-0-'+str(i)+'.html'
-        res = requests.get(url, headers=get_headers(), proxies=random.choice(proxys)).text
-        res = re.findall('href="//ibaotu.com/sucai/(\d{6}).html" target="_blank"', res)
-        base_url = 'https://ibaotu.com/sucai/'
-        i = 0
-        op = []
-        while i<len(res):
-            num = res[i]
-            url = base_url + num + '.html'
-            op.append(url)
-            i += 2
-        proxys = init_proxy()
-        for url in op:
-            print(url)
-            session = requests.session()
-            header = get_headers()
-            res = requests.get(url, headers=get_headers(), proxies=random.choice(proxys)).text
-            name = re.search('<title>.*</title>', res).group()[7:-16]
-            down = 'http:' + re.search('src="//.*.mp4', res).group()[5:]
-            r = session.get(down, headers=header)
-            f = open('/Users/huben/Desktop/video/' + name + '.mp4', 'wb')
-            f.write(r.content)
-            f.close()
+    # 随机选择一个代理
+    # random.choice(proxys)
+    # req = requests.get(BASE_URL, headers=get_headers(), proxies=random.choice(proxys))
